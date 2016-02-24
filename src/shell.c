@@ -114,7 +114,6 @@ bool match_command(struct CommandBuffer * cb,char ** cwd,const char ** path){
 			}
 			(*cwd) = getcwd(*cwd,PATH_BUFFER_SIZE);
 		}else{
-                    printf("Got here!");
                         size_t itt = 0;
                         while(path[itt]){
                             //get full path
@@ -123,7 +122,6 @@ bool match_command(struct CommandBuffer * cb,char ** cwd,const char ** path){
                             strncat(full_path_buff,buff[0],PATH_BUFFER_SIZE);
                             //test if we can acces file
                             if(access(full_path_buff,X_OK) != -1){
-                                printf("found!");
                                 pid_t pid = fork();
                                 if(pid == 0){
                                     if(execv(full_path_buff,&buff[0]) == -1)
