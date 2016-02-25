@@ -1,3 +1,10 @@
+/*
+ * Operating Systems assignment 1
+ * Authors:
+ * Mees delzenne s1531255.
+ * Mick Voogt s1542125
+ */
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,7 +15,6 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
 #include "shell.h"
 
 const size_t SIZE_INCREASE = 40;
@@ -193,24 +199,26 @@ bool execute_pipe(const char ** path,char * name,char ** args,char * name_child,
             pid_t pid2 = fork();
             {
                 if(pid2 == 0){//CHILD
-                    close(pipes[1]);
-                    while ((dup2(pipes[0],0) == -1) && (errno == EINTR)) {}
-                    close(pipes[0]);
-                    if(execv(sub_full_path,args_child) == -1)
-                        printf("%s\n",strerror(errno));
-                    exit(0);
-                }else{ //PARENT
                     close(pipes[0]);
                     while ((dup2(pipes[1], STDOUT_FILENO) == -1) && (errno == EINTR)) {}
                     close(pipes[1]);
                     if(execv(full_path,args) == -1)
                         printf("%s\n",strerror(errno));
-                    wait(NULL);
-                    exit(0);
+                    exit(1);
+                }else{ //PARENT
+                    close(pipes[1]);
+                    while ((dup2(pipes[0],0) == -1) && (errno == EINTR)) {}
+                    close(pipes[0]);
+                    if(execv(sub_full_path,args_child) == -1)
+                        printf("%s\n",strerror(errno));
+                    exit(1);
                 }
             }
         }else{//grand parent
-            wait(NULL);
+            waitpid(pid,NULL,0);
+            while(errno != ECHILD){
+                waitpid(pid,NULL,0);
+            };
             return true;
         }
     }
@@ -251,23 +259,23 @@ bool match_command(struct CommandBuffer * cb,char ** cwd,const char ** path){
 /*
  * Runs the shell
  */
-void start_shell(){
-    const char *path[] = {
-        "./",
-        "/usr/bin/",
-        "/bin/",
-        NULL
-    };
-    char buff[PATH_BUFFER_SIZE];
-    char * cwd;
-    cwd = getcwd(buff,PATH_BUFFER_SIZE); 
-    bool running = true;
-    struct CommandBuffer cmb = command_buffer_factory();
-    while(running){
-        printf("%s > ",cwd);
-        get_command(&cmb,stdin);
-        running = match_command(&cmb,&cwd,path);
-    }
-    delete_command_buffer(&cmb);
-    printf("Exiting shell\n");
-}
+                void start_shell(){
+                    const char *path[] = {
+                        "./",
+                        "/usr/bin/",
+                        "/bin/",
+                        NULL
+                    };
+                    char buff[PATH_BUFFER_SIZE];
+                    char * cwd;
+                    cwd = getcwd(buff,PATH_BUFFER_SIZE); 
+                    bool running = true;
+                    struct CommandBuffer cmb = command_buffer_factory();
+                    while(running){
+                        printf("%s > ",cwd);
+                        get_command(&cmb,stdin);
+                        running = match_command(&cmb,&cwd,path);
+                    }
+                    delete_command_buffer(&cmb);
+                    printf("Exiting shell\n");
+                }
